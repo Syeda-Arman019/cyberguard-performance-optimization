@@ -1,4 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- CyberGuard performance module. Only these two permissions are added; both are
+         "normal" permissions granted at install time (no runtime dialog).
+         PACKAGE_USAGE_STATS is an app-op style permission: the manifest entry alone grants
+         nothing, the user must enable "Usage access" themselves in system settings.
+         QUERY_ALL_PACKAGES is needed to list other apps for the storage/network reports. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
     <application
         android:label="performance_optimization"
         android:name="${applicationName}"

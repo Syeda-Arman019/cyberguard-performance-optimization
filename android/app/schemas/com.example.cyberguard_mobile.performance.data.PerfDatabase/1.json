@@ -1,0 +1,586 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "0e19d90407712a5f3259bde661d1075f",
+    "entities": [
+      {
+        "tableName": "perf_samples",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `battery_pct` INTEGER, `battery_temp_c` REAL, `charging_state` TEXT NOT NULL, `plugged_type` TEXT NOT NULL, `battery_current_ua` INTEGER, `thermal_status` INTEGER, `screen_interactive` INTEGER, `mem_total_mb` INTEGER NOT NULL, `mem_avail_mb` INTEGER NOT NULL, `low_memory` INTEGER NOT NULL, `storage_free_bytes` INTEGER NOT NULL, `storage_total_bytes` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryPct",
+            "columnName": "battery_pct",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "batteryTempC",
+            "columnName": "battery_temp_c",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "chargingState",
+            "columnName": "charging_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pluggedType",
+            "columnName": "plugged_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryCurrentUa",
+            "columnName": "battery_current_ua",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "thermalStatus",
+            "columnName": "thermal_status",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "screenInteractive",
+            "columnName": "screen_interactive",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "memTotalMb",
+            "columnName": "mem_total_mb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memAvailMb",
+            "columnName": "mem_avail_mb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowMemory",
+            "columnName": "low_memory",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageFreeBytes",
+            "columnName": "storage_free_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageTotalBytes",
+            "columnName": "storage_total_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_perf_samples_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_samples_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          }
+        ]
+      },
+      {
+        "tableName": "perf_capabilities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`metric_name` TEXT NOT NULL, `state` TEXT NOT NULL, `reason` TEXT, `checked_at` INTEGER NOT NULL, PRIMARY KEY(`metric_name`))",
+        "fields": [
+          {
+            "fieldPath": "metricName",
+            "columnName": "metric_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkedAt",
+            "columnName": "checked_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "metric_name"
+          ]
+        }
+      },
+      {
+        "tableName": "perf_device_info",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recorded_at` INTEGER NOT NULL, `total_ram_mb` INTEGER NOT NULL, `battery_capacity_mah` INTEGER, `device_model` TEXT NOT NULL, `android_sdk` INTEGER NOT NULL, PRIMARY KEY(`recorded_at`))",
+        "fields": [
+          {
+            "fieldPath": "recordedAt",
+            "columnName": "recorded_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalRamMb",
+            "columnName": "total_ram_mb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryCapacityMah",
+            "columnName": "battery_capacity_mah",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deviceModel",
+            "columnName": "device_model",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "androidSdk",
+            "columnName": "android_sdk",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "recorded_at"
+          ]
+        }
+      },
+      {
+        "tableName": "perf_app_storage",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `package_name` TEXT NOT NULL, `app_label` TEXT NOT NULL, `app_bytes` INTEGER, `data_bytes` INTEGER, `cache_bytes` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appLabel",
+            "columnName": "app_label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appBytes",
+            "columnName": "app_bytes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "dataBytes",
+            "columnName": "data_bytes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cacheBytes",
+            "columnName": "cache_bytes",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_perf_app_storage_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_app_storage_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_perf_app_storage_package_name",
+            "unique": false,
+            "columnNames": [
+              "package_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_app_storage_package_name` ON `${TABLE_NAME}` (`package_name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "perf_heat_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `start_ts` INTEGER NOT NULL, `end_ts` INTEGER, `peak_temp_c` REAL, `peak_thermal_status` INTEGER, `charging_during` INTEGER NOT NULL, `foreground_package` TEXT, `recovery_minutes` INTEGER, `sample_count` INTEGER NOT NULL, `max_sample_gap_min` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTs",
+            "columnName": "start_ts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTs",
+            "columnName": "end_ts",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "peakTempC",
+            "columnName": "peak_temp_c",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "peakThermalStatus",
+            "columnName": "peak_thermal_status",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "chargingDuring",
+            "columnName": "charging_during",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foregroundPackage",
+            "columnName": "foreground_package",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recoveryMinutes",
+            "columnName": "recovery_minutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sampleCount",
+            "columnName": "sample_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxSampleGapMin",
+            "columnName": "max_sample_gap_min",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_perf_heat_sessions_start_ts",
+            "unique": false,
+            "columnNames": [
+              "start_ts"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_heat_sessions_start_ts` ON `${TABLE_NAME}` (`start_ts`)"
+          }
+        ]
+      },
+      {
+        "tableName": "perf_findings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `rule_id` TEXT NOT NULL, `title` TEXT NOT NULL, `severity` TEXT NOT NULL, `confidence` TEXT NOT NULL, `what` TEXT NOT NULL, `why` TEXT NOT NULL, `impact` TEXT NOT NULL, `solution_kind` TEXT NOT NULL, `solution_package` TEXT, `evidence_json` TEXT NOT NULL, `data_source` TEXT NOT NULL, `window_start` INTEGER NOT NULL, `window_end` INTEGER NOT NULL, `suppressed` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruleId",
+            "columnName": "rule_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "what",
+            "columnName": "what",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "why",
+            "columnName": "why",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impact",
+            "columnName": "impact",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "solutionKind",
+            "columnName": "solution_kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "solutionPackage",
+            "columnName": "solution_package",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "evidenceJson",
+            "columnName": "evidence_json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataSource",
+            "columnName": "data_source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowStart",
+            "columnName": "window_start",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowEnd",
+            "columnName": "window_end",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "suppressed",
+            "columnName": "suppressed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_perf_findings_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_findings_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_perf_findings_rule_id",
+            "unique": false,
+            "columnNames": [
+              "rule_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_findings_rule_id` ON `${TABLE_NAME}` (`rule_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "perf_expected",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `rule_id` TEXT NOT NULL, `package_name` TEXT, `created_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruleId",
+            "columnName": "rule_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_perf_expected_rule_id",
+            "unique": false,
+            "columnNames": [
+              "rule_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_expected_rule_id` ON `${TABLE_NAME}` (`rule_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "perf_charging_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `start_ts` INTEGER NOT NULL, `end_ts` INTEGER, `start_pct` INTEGER, `end_pct` INTEGER, `peak_temp_c` REAL, `heat_event` INTEGER NOT NULL, `plugged_type` TEXT NOT NULL, `sample_count` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTs",
+            "columnName": "start_ts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTs",
+            "columnName": "end_ts",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "startPct",
+            "columnName": "start_pct",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endPct",
+            "columnName": "end_pct",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "peakTempC",
+            "columnName": "peak_temp_c",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "heatEvent",
+            "columnName": "heat_event",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pluggedType",
+            "columnName": "plugged_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sampleCount",
+            "columnName": "sample_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_perf_charging_sessions_start_ts",
+            "unique": false,
+            "columnNames": [
+              "start_ts"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_perf_charging_sessions_start_ts` ON `${TABLE_NAME}` (`start_ts`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0e19d90407712a5f3259bde661d1075f')"
+    ]
+  }
+}
