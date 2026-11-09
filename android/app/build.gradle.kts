@@ -4,7 +4,7 @@ plugins {
     // to attach to. Order matters: the Flutter Gradle Plugin must come after Android + Kotlin.
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-    id("dev.flutter.flutter-gradle-plugin")
+id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
@@ -47,6 +47,7 @@ kotlin {
 
 dependencies {
     // CyberGuard performance module: Room (local database) + WorkManager (periodic sampling).
+    testImplementation("junit:junit:4.13.2")
     // These are the only third-party Android dependencies the module is allowed to use.
     implementation("androidx.room:room-runtime:2.8.5")
     ksp("androidx.room:room-compiler:2.8.5")

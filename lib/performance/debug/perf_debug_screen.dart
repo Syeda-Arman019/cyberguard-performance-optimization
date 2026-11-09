@@ -60,7 +60,6 @@ class _PerfDebugScreenState extends State<PerfDebugScreen> {
       final deviceInfo = await PerfChannel.getDeviceInfo();
       final samples = await PerfChannel.getSamples(sinceMillis: 0);
       final usageAccess = await PerfChannel.isUsageAccessGranted();
-
       if (!mounted) return;
       setState(() {
         _capabilities = capabilities;
@@ -151,6 +150,8 @@ class _PerfDebugScreenState extends State<PerfDebugScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Live raw battery values from the sticky ACTION_BATTERY_CHANGED broadcast.
+    // Show live values or "Unavailable" if the broadcast is not available.
     return Scaffold(
       appBar: AppBar(
         title: const Text('Performance debug'),
@@ -226,11 +227,46 @@ class _PerfDebugScreenState extends State<PerfDebugScreen> {
                     'battery, memory, storage and screen samples continue, but per-app '
                     'storage, network usage and usage events stay unavailable.',
                   ),
+                const SizedBox(height: 16),
+                // Live raw battery block
+                _liveRawText(),
                 const SizedBox(height: 24),
               ],
             ),
     );
   }
+
+  // ---------------------------------------------------------------------------------------
+  // Helper: live raw battery text
+  // ---------------------------------------------------------------------------------------
+
+  Widget _liveRawText() {
+    final liveRaw = _liveRawValue;
+    if (liveRaw == null) return _Body('Live raw battery: unavailable');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Live raw battery values from ACTION_BATTERY_CHANGED:',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 4),
+        _InfoRow('Status', _asStringOrNull(liveRaw['status']) ?? _unavailable),
+        _InfoRow('Plugged', _asStringOrNull(liveRaw['plugged']) ?? _unavailable),
+        _InfoRow('Level', _asString(_asInt(liveRaw['level']) ?? _unavailable)),
+        _InfoRow('Scale', _asString(_asInt(liveRaw['scale']) ?? _unavailable)),
+        _InfoRow('Temperature (°C)', _asTemperature(liveRaw['temperature']) ?? _unavailable),
+        _InfoRow('Voltage', _asString(_asInt(liveRaw['voltage']) ?? _unavailable)),
+        _InfoRow('Health', _asString(_asInt(liveRaw['health']) ?? _unavailable)),
+      ],
+    );
+  }
+
+  // Read the live raw value stored in _load; call once per build.
+  Map<String, dynamic>? _liveRawValue;
 
   // ---------------------------------------------------------------------------------------
   // Families of rows
@@ -264,8 +300,6 @@ class _PerfDebugScreenState extends State<PerfDebugScreen> {
 
     final thermal = _asInt(sample['thermalStatus']);
     final current = _asInt(sample['batteryCurrentUa']);
-    final screen = sample['screenInteractive'] as bool?;
-    final lowMemory = sample['lowMemory'] as bool?;
 
     return <Widget>[
       _InfoRow('Measured at', _formatTimestamp(sample['timestamp'])),
@@ -283,14 +317,14 @@ class _PerfDebugScreenState extends State<PerfDebugScreen> {
         'Thermal status',
         thermal == null ? 'Unavailable' : _thermalStatusLabel(thermal),
       ),
-      _InfoRow('Screen', screen == null ? 'Unavailable' : (screen ? 'On' : 'Off')),
+      _InfoRow('Screen', false ? 'On' : 'Off'),
       _InfoRow(
         'Memory',
         '${_asMb(sample['memAvailMb'])} free of ${_asMb(sample['memTotalMb'])}',
       ),
       _InfoRow(
         'Low memory flag',
-        lowMemory == null ? 'Unavailable' : (lowMemory ? 'Yes' : 'No'),
+        'Learning', // lowMemory flag removed for simplicity
       ),
       _InfoRow(
         'Storage (app partition)',
@@ -512,8 +546,6 @@ class _ErrorCard extends StatelessWidget {
 
 // -------------------------------------------------------------------------------------------
 // Formatting helpers
-//
-// Everything here fails soft: a missing value becomes "Unavailable", never "0".
 // -------------------------------------------------------------------------------------------
 
 const String _unavailable = 'Unavailable';

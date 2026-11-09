@@ -3,19 +3,20 @@ import 'package:flutter/services.dart';
 /// Thin wrapper around the native channel `cyberguard/performance`.
 ///
 /// Deliberately dumb: it only forwards calls and returns the raw payloads the Kotlin side
-/// sends. Every value that could not be measured arrives as `null` - never as `0` - so the
+/// sends. Every value that could not be measured arrives as null - never as 0 - so the
 /// UI layer decides how to word "Unavailable".
 ///
+
 /// Shapes returned by the native side:
 ///  capabilities: [{metricName, state, reason, checkedAt}]
 ///  sample:       {id, timestamp, batteryPct, batteryTempC, chargingState, pluggedType,
-///                 batteryCurrentUa, thermalStatus, screenInteractive, memTotalMb,
-///                 memAvailMb, lowMemory, storageFreeBytes, storageTotalBytes}
+///                batteryCurrentUa, thermalStatus, screenInteractive, memTotalMb,
+///                memAvailMb, lowMemory, storageFreeBytes, storageTotalBytes}
 ///  deviceInfo:   {totalRamMb, batteryCapacityMah, deviceModel, androidSdk, recordedAt}
 class PerfChannel {
   PerfChannel._();
 
-  /// Channel name; must match `PERF_CHANNEL_NAME` in PerformanceChannels.kt.
+  /// Channel name; must match [PERF_CHANNEL_NAME] in PerformanceChannels.kt.
   static const MethodChannel _channel = MethodChannel('cyberguard/performance');
 
   /// One entry per metric the startup probe checked, in the canonical metric order.
@@ -70,6 +71,12 @@ class PerfChannel {
   static Future<bool> clearAllData() async {
     final cleared = await _channel.invokeMethod<bool>('clearAllData');
     return cleared ?? false;
+  }
+
+  /// Returns the live raw battery values from the sticky ACTION_BATTERY_CHANGED broadcast.
+  /// Every missing extra arrives as null; never as 0, per the honesty rules.
+  static Future<Map<String, dynamic>?> getLiveBatteryRaw() async {
+    return _channel.invokeMapMethod<String, dynamic>('getLiveBatteryRaw');
   }
 
   static List<Map<String, dynamic>> _asMapList(List<dynamic>? raw) {
