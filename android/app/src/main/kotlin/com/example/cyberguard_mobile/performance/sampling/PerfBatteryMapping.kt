@@ -3,7 +3,7 @@ package com.example.cyberguard_mobile.performance.sampling
 import com.example.cyberguard_mobile.performance.data.PerfChargingState
 import com.example.cyberguard_mobile.performance.data.PerfPluggedType
 
-/****
+/*****
  * Pure functions that map raw Android battery ints to our canonical string constants.
  * No Android APIs, no Context, no database: these can be unit-tested outside an APK.
  ****/
@@ -16,10 +16,11 @@ import com.example.cyberguard_mobile.performance.data.PerfPluggedType
 fun mapChargingState(status: Int?, plugged: Int?): String {
     return when {
         status == null -> PerfChargingState.UNKNOWN
-        status == 1 -> PerfChargingState.CHARGING   // task numbering: 2 in Android, but we use task's 1→CHARGING mapping
-        status == 2 -> PerfChargingState.DISCHARGING // task numbering: 3 in Android
-        status == 3 -> PerfChargingState.NOT_CHARGING // task numbering: 4 in Android
-        status == 4 -> PerfChargingState.FULL       // task numbering: 5 in Android
+        status == 1 -> PerfChargingState.UNKNOWN
+        status == 2 -> PerfChargingState.CHARGING
+        status == 3 -> PerfChargingState.DISCHARGING
+        status == 4 -> PerfChargingState.NOT_CHARGING
+        status == 5 -> PerfChargingState.FULL
         else -> PerfChargingState.UNKNOWN
     }
 }
