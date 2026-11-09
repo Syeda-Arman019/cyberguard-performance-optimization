@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'thresholds.dart';
 
 /// A single contiguous discharge run.
@@ -43,6 +45,10 @@ List<DischargeRun> dischargeRuns(
   bool splitByScreen = false,
   int minMinutes = 60,
 }) {
+  debugPrint(
+    '[PERF_TRACE] dischargeRuns: input=${samples.length}, '
+    'splitByScreen=$splitByScreen, minMinutes=$minMinutes',
+  );
   // Keep only samples that are discharging and have battery_pct.
   // "discharging" = chargingState is not 'charging' (null or other string).
   final discharging = <Map<String, dynamic>>[];
@@ -54,7 +60,14 @@ List<DischargeRun> dischargeRuns(
     }
   }
 
-  if (discharging.isEmpty) return [];
+  debugPrint(
+    '[PERF_TRACE] dischargeRuns: eligible=${discharging.length}; '
+    'batteryPct types=${discharging.take(5).map((sample) => sample['batteryPct'].runtimeType).toList()}',
+  );
+  if (discharging.isEmpty) {
+    debugPrint('[PERF_TRACE] dischargeRuns: no eligible samples');
+    return [];
+  }
 
   // Ensure ascending by timestamp (oldest first).
   discharging.sort((a, b) {
@@ -70,7 +83,7 @@ List<DischargeRun> dischargeRuns(
   while (i < n) {
     final startSamp = discharging[i];
     final startMillis = startSamp['timestamp'] as int;
-    final startPct = startSamp['batteryPct'] as double;
+    final startPct = (startSamp['batteryPct'] as num).toDouble();
     if (startPct.isNaN) {
       i++;
       continue;
@@ -86,7 +99,7 @@ List<DischargeRun> dischargeRuns(
     for (int j = i + 1; j < n; j++) {
       final curr = discharging[j];
       final currMillis = curr['timestamp'] as int;
-      final currPct = curr['batteryPct'] as double;
+      final currPct = (curr['batteryPct'] as num).toDouble();
       final currScreen = curr['screenInteractive'];
       final gapMillis = currMillis - prevMillis;
 
@@ -159,6 +172,7 @@ List<DischargeRun> dischargeRuns(
     i = runJ;
   }
 
+  debugPrint('[PERF_TRACE] dischargeRuns: produced ${runsList.length} discharge runs');
   return runsList;
 }
 

@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import 'discharge_runs.dart';
 import 'thresholds.dart';
 
@@ -114,14 +116,44 @@ HealthResult computeHealthIndex({
   final now = nowMillis ?? DateTime.now().millisecondsSinceEpoch;
   final windowStart = now - 24 * 60 * 60 * 1000; // 24h window
 
+  // [PERF_TRACE] Total samples entering the filter
+  debugPrint('[PERF_TRACE] computeHealthIndex: total input samples=${samples.length}');
+  if (samples.isNotEmpty) {
+    final firstTimestamp = samples.first['timestamp'];
+    final lastTimestamp = samples.last['timestamp'];
+    debugPrint(
+      '[PERF_TRACE] computeHealthIndex: timestamp types='
+      '${firstTimestamp.runtimeType}/${lastTimestamp.runtimeType}; '
+      'values=$firstTimestamp/$lastTimestamp',
+    );
+  }
+
   // Filter samples to the 24h window, oldest first.
   final windowSamples = <Map<String, dynamic>>[];
+  var missingTimestampCount = 0;
+  var beforeWindowCount = 0;
+  var futureTimestampCount = 0;
   for (final s in samples) {
-    final ts = s['timestamp'] as int?;
+    final rawTimestamp = s['timestamp'];
+    final ts = rawTimestamp as int?;
+    if (ts == null) {
+      missingTimestampCount++;
+    } else if (ts < windowStart) {
+      beforeWindowCount++;
+    } else if (ts > now) {
+      futureTimestampCount++;
+    }
     if (ts != null && ts >= windowStart && ts <= now) {
       windowSamples.add(s);
     }
   }
+
+  // [PERF_TRACE] Samples after 24h window filter
+  debugPrint('[PERF_TRACE] computeHealthIndex: samples after 24h window filter=${windowSamples.length} (windowStart=$windowStart, now=$now)');
+  debugPrint(
+    '[PERF_TRACE] computeHealthIndex: excluded missing=$missingTimestampCount, '
+    'olderThanWindow=$beforeWindowCount, future=$futureTimestampCount',
+  );
 
   final sampleCount = windowSamples.length;
 

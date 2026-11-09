@@ -56,6 +56,23 @@ void main() {
       expect(runs[0].drop, equals(20.0));
     });
 
+    test('accepts integer battery percentages from the native channel', () {
+      final samples = <Map<String, dynamic>>[
+        {'timestamp': 0, 'batteryPct': 80, 'chargingState': 'discharging'},
+        {
+          'timestamp': 60 * 60 * 1000,
+          'batteryPct': 60,
+          'chargingState': 'discharging',
+        },
+      ];
+
+      final runs = dischargeRuns(samples, splitByScreen: false);
+
+      expect(runs, hasLength(1));
+      expect(runs.single.startPct, equals(80.0));
+      expect(runs.single.endPct, equals(60.0));
+    });
+
     test('stops run when gap > 60 min', () {
       final samplesWithGap = List<Map<String, dynamic>>.from(dischargingSamples)
         ..add({'timestamp': 200 * 60 * 1000, 'batteryPct': 55.0, 'chargingState': null, 'screenInteractive': false});
