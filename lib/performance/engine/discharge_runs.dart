@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'thresholds.dart';
 
 /// A single contiguous discharge run.
@@ -37,7 +35,7 @@ class DischargeRun {
 ///
 /// [samples] must be ordered oldest first.
 /// [splitByScreen] if true, a change in screen_interactive breaks the run;
-///    a null screen_interactive breaks the run entirely.
+///   a null screen_interactive breaks the run entirely.
 /// [minMinutes] minimum run duration to keep (runs shorter are discarded).
 /// Returns runs sorted oldest first.
 List<DischargeRun> dischargeRuns(
@@ -60,8 +58,8 @@ List<DischargeRun> dischargeRuns(
 
   // Ensure ascending by timestamp (oldest first).
   discharging.sort((a, b) {
-    final ta = a['timestamp'] ?? 0;
-    final tb = b['timestamp'] ?? 0;
+    final ta = a['timestamp'] as int;
+    final tb = b['timestamp'] as int;
     return ta.compareTo(tb);
   });
 
@@ -71,31 +69,30 @@ List<DischargeRun> dischargeRuns(
 
   while (i < n) {
     final startSamp = discharging[i];
-    final startMillis = startSamp['timestamp'] as int?;
-    final startPct = startSamp['batteryPct'] as double?;
-    if (startMillis == null || startPct == null) {
+    final startMillis = startSamp['timestamp'] as int;
+    final startPct = startSamp['batteryPct'] as double;
+    if (startPct.isNaN) {
       i++;
       continue;
     }
 
-    // Start building a run at index i.
-    int runStartIdx = i;
-    int? runEndMillis = startMillis;
+    // Figure out the end of this run by scanning forward.
+    int runEndMillis = startMillis;
     double runEndPct = startPct;
     bool? runScreenOn = startSamp['screenInteractive'];
-    int? prevMillis = startMillis;
+    int prevMillis = startMillis;
+    int runJ = i; // first index NOT included in the run (initialized to i, will advance)
 
     for (int j = i + 1; j < n; j++) {
       final curr = discharging[j];
-      final currMillis = curr['timestamp'] as int?;
-      final currPct = curr['batteryPct'] as double?;
+      final currMillis = curr['timestamp'] as int;
+      final currPct = curr['batteryPct'] as double;
       final currScreen = curr['screenInteractive'];
-      final gapMillis = currMillis != null && prevMillis != null
-          ? currMillis - prevMillis
-          : null;
+      final gapMillis = currMillis - prevMillis;
 
       // Gap too large → end of run.
-      if (gapMillis != null && gapMillis > Thresholds.runMaxGapMin * 60 * 1000) {
+      if (gapMillis > Thresholds.runMaxGapMin * 60 * 1000) {
+        runJ = j;
         break;
       }
 
@@ -105,27 +102,31 @@ List<DischargeRun> dischargeRuns(
         if (currScreen != prevScreen) {
           // A null screen state breaks the run entirely.
           if (currScreen == null) {
+            runJ = j;
             break;
           }
           // Any other change (true→false, false→true, etc.) breaks the run.
+          runJ = j;
           break;
         }
       }
 
       // Consecutive sample: extend the run.
-      runEndMillis = currMillis ?? runEndMillis;
-      runEndPct = currPct ?? runEndPct;
+      runEndMillis = currMillis;
+      runEndPct = currPct;
       if (currScreen != null) runScreenOn = currScreen;
-      // if currScreen is null and we're not breaking, keep previous screenOn
-
       prevMillis = currMillis;
+      runJ = j + 1; // next sample after this one
     }
 
-    // Now evaluate the run from runStartIdx to j-1 (inclusive).
+    // If the for loop completed naturally (no break), runJ = n.
+    if (runJ == i) runJ = n;
+
+    // Now evaluate the run from index i to runJ-1 (inclusive).
     // Check: percentage must not have risen.
     if (startPct < runEndPct) {
       // Percentage rose → discard this run.
-      i = j; // move past the sample that caused the rise (or j if we broke for other reasons)
+      i = runJ;
       continue;
     }
 
@@ -134,7 +135,7 @@ List<DischargeRun> dischargeRuns(
     final minMillis = minMinutes * 60 * 1000;
     if (durationMillis < minMillis) {
       // Too short → discard, try next starting point.
-      i = j; // move past the run samples; j is first index not in the run
+      i = runJ;
       continue;
     }
 
@@ -154,9 +155,8 @@ List<DischargeRun> dischargeRuns(
       ratePerHour: _roundToTwo(ratePerHour),
     ));
 
-    // Advance i to the first sample after this run (index j).
-    // j is the first index that broke the loop, which is the first sample NOT included.
-    i = j;
+    // Advance i to the first sample after this run (index runJ).
+    i = runJ;
   }
 
   return runsList;
@@ -168,17 +168,24 @@ List<DischargeRun> dischargeRuns(
 double? overallRate(List<DischargeRun> runs) {
   if (runs.isEmpty) return null;
 
-  final totalDrop = runs.fold<double>(0, (sum, run) => sum + run.drop);
-  final totalHours = runs.fold<double>(0, (sum, run) => sum + run.hours);
+  double sumDrop = 0.0;
+  double sumHours = 0.0;
+  for (int i = 0; i < runs.length; i++) {
+    final run = runs[i];
+    sumDrop = sumDrop + run.drop;
+    sumHours = sumHours + run.hours;
+  }
 
-  if (totalHours < Thresholds.minDrainHours) return null;
+  if (sumHours < Thresholds.minDrainHours) return null;
 
-  if (totalHours == 0) return null;
+  if (sumHours == 0.0) return null;
 
-  return totalDrop / totalHours;
+  return sumDrop / sumHours;
 }
 
 /// Internal helper: round to two decimal places.
 double _roundToTwo(double value) {
-  return ((value * 100).roundToDouble / 100);
+  // Use int rounding to avoid Dart analyzer type inference issues
+  final int rounded = (value * 100).round();
+  return rounded / 100.0;
 }

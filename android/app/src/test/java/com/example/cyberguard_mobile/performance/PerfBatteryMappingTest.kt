@@ -1,5 +1,6 @@
 package com.example.cyberguard_mobile.performance
-
+import com.example.cyberguard_mobile.performance.data.PerfChargingState
+import com.example.cyberguard_mobile.performance.data.PerfPluggedType
 import com.example.cyberguard_mobile.performance.sampling.mapChargingState
 import com.example.cyberguard_mobile.performance.sampling.mapPluggedType
 import org.junit.Test
