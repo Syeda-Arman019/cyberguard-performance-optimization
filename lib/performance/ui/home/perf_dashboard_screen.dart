@@ -19,7 +19,27 @@ class _PerformanceDashboardScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Performance'),
+        toolbarHeight: _selectedIndex == 0 ? 72 : kToolbarHeight,
+        title: _selectedIndex == 0
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Phone Health',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    'Your device performance overview',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              )
+            : const Text('Performance'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -59,10 +79,7 @@ class _PerformanceDashboardScreenState
             icon: const Icon(Icons.storage),
             label: 'Storage',
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.build),
-            label: 'Fix',
-          ),
+          NavigationDestination(icon: const Icon(Icons.build), label: 'Fix'),
         ],
       ),
     );
@@ -122,9 +139,7 @@ class _DevToolsTile extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const PerfDebugScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const PerfDebugScreen()),
         );
       },
       child: Card(
@@ -133,13 +148,19 @@ class _DevToolsTile extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              Icon(Icons.remove_circle,
-                  size: 28, color: Theme.of(context).colorScheme.error),
+              Icon(
+                Icons.remove_circle,
+                size: 28,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(width: 12),
               const Text('Developer tools', style: TextStyle(fontSize: 18)),
               const Spacer(),
-              Icon(Icons.arrow_forward_ios,
-                  size: 16, color: Theme.of(context).colorScheme.outline),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ],
           ),
         ),

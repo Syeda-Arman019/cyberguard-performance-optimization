@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme.dart';
+
 /// Status of a performance metric, with a human-readable label.
 enum PerfStatus {
   good,
@@ -29,12 +31,13 @@ enum PerfStatus {
   Color getFromColorScheme(ColorScheme colorScheme) {
     switch (this) {
       case good:
-        return colorScheme.primary;
+        return CyberColors.success;
       case fair:
-        return colorScheme.tertiary;
+        return CyberColors.warning;
       case attention:
-        return colorScheme.error;
+        return CyberColors.error;
       case learning:
+        return CyberColors.textMuted;
       case unavailable:
         return colorScheme.outline;
     }

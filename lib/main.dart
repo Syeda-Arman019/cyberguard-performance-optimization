@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'core/theme.dart';
 import 'performance/data/perf_repository.dart';
 import 'performance/ui/home/perf_dashboard_screen.dart';
 import 'performance/debug/perf_debug_screen.dart';
@@ -14,10 +15,7 @@ class PerformanceOptimizationApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CyberGuard Performance Optimization',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      theme: CyberTheme.light,
       home: const PerfDebugScreen(),
     );
   }
@@ -32,10 +30,7 @@ class PerformanceDashboardApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CyberGuard Performance Optimization',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      theme: CyberTheme.light,
       home: const PerformanceDashboardScreen(),
     );
   }
@@ -45,7 +40,9 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize the performance native channel before running the app
-  final MethodChannel performanceChannel = MethodChannel('cyberguard/performance');
+  final MethodChannel performanceChannel = MethodChannel(
+    'cyberguard/performance',
+  );
   PerfRepository.setChannel(performanceChannel);
 
   runApp(const PerformanceDashboardApp());

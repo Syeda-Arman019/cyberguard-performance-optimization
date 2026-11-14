@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:performance_optimization/core/theme.dart';
 import 'package:performance_optimization/performance/data/perf_repository.dart';
 import 'package:performance_optimization/performance/engine/health_index.dart';
 import 'package:performance_optimization/performance/ui/common/perf_status.dart';
-import 'package:performance_optimization/performance/ui/common/perf_time.dart';
 import 'package:performance_optimization/performance/ui/common/perf_widgets.dart';
-
-// Import the settings screen from the dashboard file
-import 'perf_dashboard_screen.dart';
 
 /// The Health tab screen showing the phone health index and metrics.
 class PerfHealthScreen extends StatefulWidget {
@@ -70,7 +67,9 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
 
     try {
       // Refresh and get latest sample
-      debugPrint('[PERF_TRACE] HealthScreen.loadData: calling refreshAndGetLatest');
+      debugPrint(
+        '[PERF_TRACE] HealthScreen.loadData: calling refreshAndGetLatest',
+      );
       final result = await PerfRepository.refreshAndGetLatest();
       _latestSample = result;
       debugPrint(
@@ -81,9 +80,13 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
       // Get samples from last 24 hours
       final sinceMillis =
           DateTime.now().millisecondsSinceEpoch - 24 * 60 * 60 * 1000;
-      debugPrint('[PERF_TRACE] HealthScreen.loadData: requesting samples since $sinceMillis');
+      debugPrint(
+        '[PERF_TRACE] HealthScreen.loadData: requesting samples since $sinceMillis',
+      );
       _samples = await PerfRepository.getSamples(sinceMillis: sinceMillis);
-      debugPrint('[PERF_TRACE] HealthScreen.loadData: received ${_samples.length} samples');
+      debugPrint(
+        '[PERF_TRACE] HealthScreen.loadData: received ${_samples.length} samples',
+      );
 
       // Check capabilities for thermal availability
       debugPrint('[PERF_TRACE] HealthScreen.loadData: requesting capabilities');
@@ -100,11 +103,15 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
       // Check usage access
       debugPrint('[PERF_TRACE] HealthScreen.loadData: checking Usage Access');
       _usageAccessGranted = await PerfRepository.isUsageAccessGranted();
-      debugPrint('[PERF_TRACE] HealthScreen.loadData: usageAccessGranted=$_usageAccessGranted');
+      debugPrint(
+        '[PERF_TRACE] HealthScreen.loadData: usageAccessGranted=$_usageAccessGranted',
+      );
 
       // Compute health index
       if (_samples.isNotEmpty) {
-        debugPrint('[PERF_TRACE] HealthScreen.loadData: computing health index');
+        debugPrint(
+          '[PERF_TRACE] HealthScreen.loadData: computing health index',
+        );
         final healthResult = computeHealthIndex(
           samples: _samples,
           thermalAvailable: _thermalAvailable,
@@ -117,7 +124,9 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
         );
         setState(() => _healthResult = healthResult);
       } else {
-        debugPrint('[PERF_TRACE] HealthScreen.loadData: no samples; clearing health result');
+        debugPrint(
+          '[PERF_TRACE] HealthScreen.loadData: no samples; clearing health result',
+        );
         setState(() => _healthResult = null);
       }
 
@@ -128,12 +137,16 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
       debugPrint('[PERF_TRACE] HealthScreen.loadData: completed successfully');
     } catch (e, stackTrace) {
       debugPrint('[PERF_TRACE] HealthScreen.loadData: FAILED: $e');
-      debugPrint('[PERF_TRACE] HealthScreen.loadData: stack trace:\n$stackTrace');
+      debugPrint(
+        '[PERF_TRACE] HealthScreen.loadData: stack trace:\n$stackTrace',
+      );
       setState(() {
         _hasError = true;
       });
     } finally {
-      debugPrint('[PERF_TRACE] HealthScreen.loadData: finally; mounted=$mounted');
+      debugPrint(
+        '[PERF_TRACE] HealthScreen.loadData: finally; mounted=$mounted',
+      );
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -142,183 +155,206 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
     debugPrint('No samples available yet');
   }
 
-  // Helper to format the age of the latest sample
-  String _formatLatestAge() {
-    if (_latestSample == null || _latestSample!['timestamp'] == null) {
-      return 'Updated just now';
-    }
-    final latestMillis = _latestSample!['timestamp'] as int;
-    final nowMillis = DateTime.now().millisecondsSinceEpoch;
-    return formatAge(latestMillis, nowMillis);
+  int? _healthScore(HealthResult? result) {
+    if (result == null) return null;
+    final components =
+        [result.battery, result.heat, result.memory, result.storage].where(
+          (component) =>
+              component.status != 'unavailable' &&
+              component.status != 'learning',
+        );
+    final measured = components.toList();
+    if (measured.isEmpty) return 0;
+    final pointsLost = measured.fold<int>(
+      0,
+      (sum, component) => sum + component.pointsLost,
+    );
+    return (100 - pointsLost * 100 / (25 * measured.length)).round().clamp(
+      0,
+      100,
+    );
   }
 
-  // Build the header band with gauge
   Widget _buildHeader() {
-    // ignore: unused_local_variable
-    final measuredCount = _healthResult?.measuredCount ?? 0;
-    final latestAge = _formatLatestAge();
+    final theme = Theme.of(context);
+    final score = _healthScore(_healthResult);
+    final result = _healthResult;
+    final statusLabel = result == null
+        ? (_loading ? 'Loading' : 'Unavailable')
+        : result.measuredCount == 0
+        ? 'Learning'
+        : result.headline;
 
-    return Container(
-      height: 200,
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: LayoutBuilder(builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final gaugeSize = maxWidth * 0.6; // gauge takes 60% of width
-
-        // Build the semi-circle gauge using CustomPainter
-        return Stack(
-          children: [
-            // Semi-circle gauge background + progress
-            CustomPaint(
-              size: Size(gaugeSize, gaugeSize),
-              painter: _GaugePainter(
-                progress: _healthResult != null
-                    ? _healthResult!.headline == 'Your phone is in good shape'
-                        ? 1.0
-                        : _healthResult!.headline == 'Your phone is doing okay'
-                            ? 0.6
-                            : 0.3
-                    : 0.0,
-              ),
-            ),
-
-            // Score text in the center
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: CyberColors.heroGradient),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    _healthResult?.headline ?? 'Collecting data...',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      'Health Index',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: CyberColors.surface,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'HEALTH INDEX / 100',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  IconButton(
+                    tooltip: 'Refresh health data',
+                    onPressed: _loading ? null : _loadData,
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: CyberColors.surface,
+                            ),
+                          )
+                        : const Icon(Icons.refresh),
+                    color: CyberColors.surface,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 112,
+                    height: 112,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 104,
+                          height: 104,
+                          child: CircularProgressIndicator(
+                            value: (score ?? 0) / 100,
+                            strokeWidth: 9,
+                            strokeCap: StrokeCap.round,
+                            backgroundColor: CyberColors.surface.withAlpha(55),
+                            color: CyberColors.surface,
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              score?.toString() ?? '—',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                color: CyberColors.surface,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'OUT OF 100',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: CyberColors.surface.withAlpha(220),
+                                letterSpacing: 0.6,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: CyberColors.surface.withAlpha(35),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: CyberColors.surface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          result?.measuredCount == 0
+                              ? 'Collecting enough measurements to assess your device.'
+                              : result?.headline ??
+                                    (_loading
+                                        ? 'Updating your device health…'
+                                        : 'Health data is not available yet.'),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: CyberColors.surface,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          result == null
+                              ? 'No health result available'
+                              : '${result.measuredCount} of 4 components measured',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: CyberColors.surface.withAlpha(220),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-
-            // N of 4 parts measured caption
-            if (_healthResult != null && measuredCount > 0 && measuredCount < 4)
-              Positioned(
-                bottom: 4,
-                left: 4,
-                child: Text(
-                  '$measuredCount of 4 parts measured.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
-
-            // Updated time on the right
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Text(
-                'Updated $latestAge',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-
-            // Gear icon on the far right
-            Positioned(
-              top: 8,
-              right: 32,
-              child: IconButton(
-                icon: const Icon(Icons.settings),
-                tooltip: 'Performance settings',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PerformanceSettingsScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      }),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  // Build a metric card for the 2x2 grid
   Widget _buildMetricCard({
     required String title,
     required IconData icon,
-    required String sentence,
-    required int pointsLost,
-    required String statusString,
+    required String value,
+    required String description,
+    required ComponentResult? result,
   }) {
-    // Points not lost out of 25, as a percentage for the bar
-    final pointsNotLost = 25 - pointsLost;
-    final barValue =
-        (pointsNotLost / 25).clamp(0.0, 1.0); // 0.0 to 1.0
+    final valueAvailable = value != 'Unavailable' && value != '—';
+    final measured =
+        result != null &&
+        result.status != 'unavailable' &&
+        result.sentence != 'Unavailable' &&
+        result.status != 'learning';
+    final status = result == null || result.status == 'unavailable'
+        ? PerfStatus.unavailable
+        : _stringToPerfStatus(result.status);
 
-    final status = _stringToPerfStatus(statusString);
-
-    return PerfCard(
-      margin: const EdgeInsets.all(4),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icon + PerfChip at top
-            Row(
-              children: [
-                Icon(icon, size: 24),
-                const Spacer(),
-                PerfChip(status: status),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Component sentence
-            Text(
-              sentence,
-              style: Theme.of(context).textTheme.bodyMedium,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-
-            // Thin bar showing share of points not lost
-            SizedBox(
-              height: 4,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(4),
-                  right: Radius.circular(4),
-                ),
-                child: LinearProgressIndicator(
-                  value: barValue > 0 ? barValue : null,
-                  minHeight: 4,
-                  backgroundColor: Colors.grey.shade200,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            // Points text
-            Text(
-              '$pointsLost pts lost',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
+    return PerfMetricCard(
+      icon: icon,
+      title: title,
+      value: valueAvailable || !_loading ? value : 'Loading…',
+      description: description,
+      status: status,
+      pointsLost: measured ? result.pointsLost : null,
     );
   }
 
@@ -326,16 +362,29 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
   Widget? _buildUsageAccessBanner() {
     if (_usageAccessGranted) return null;
 
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      color: theme.colorScheme.secondaryContainer,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Row(
         children: [
+          const SizedBox(width: 14),
+          Icon(
+            Icons.privacy_tip_outlined,
+            color: theme.colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Some details need Usage Access. Optional. Nothing leaves your phone.',
-              style: Theme.of(context).textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Text(
+                'Usage Access can provide additional app-usage details. It is optional.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+              ),
             ),
           ),
           TextButton(
@@ -353,123 +402,141 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
     );
   }
 
-  // Build the footer card
   Widget _buildFooter() {
-    final sampleCount = _healthResult?.sampleCount ?? 0;
-    final gapsCount = _healthResult?.gapsCount ?? 0;
+    final theme = Theme.of(context);
+    final sampleCount = _healthResult?.sampleCount ?? _samples.length;
+    final batteryResult = _healthResult?.battery;
+    final heatResult = _healthResult?.heat;
+    final memoryResult = _healthResult?.memory;
+    final storageResult = _healthResult?.storage;
 
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Based on $sampleCount samples, last 24 hours',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (gapsCount > 0)
-                Text(
-                  '$gapsCount small data gaps',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              const SizedBox(height: 8),
-              // "How this was measured" link
-              TextButton(
-                onPressed: () {
-                  _showDetailsSheet(context);
-                },
-                child: const Text(
-                  'How this was measured',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 18),
+          childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          leading: Icon(
+            Icons.fact_check_outlined,
+            color: theme.colorScheme.primary,
           ),
+          title: const Text('How this was measured'),
+          subtitle: Text(
+            '$sampleCount samples · Last 24 hours',
+            style: theme.textTheme.bodySmall,
+          ),
+          children: [
+            _detailRow('Measurement window', 'Last 24 hours', theme),
+            _detailRow('Available samples', '$sampleCount', theme),
+            _detailRow(
+              'Last updated',
+              _latestSample == null
+                  ? 'Unavailable'
+                  : _formatTimestamp(_latestSample!['timestamp']),
+              theme,
+            ),
+            _detailRow(
+              'Data sources',
+              'Battery readings, device memory and storage, and thermal status when available.',
+              theme,
+            ),
+            const Divider(height: 24),
+            _detailRow(
+              'Battery',
+              _componentDetail(batteryResult, _batteryValue()),
+              theme,
+            ),
+            _detailRow(
+              'Thermal',
+              _componentDetail(heatResult, _temperatureValue()),
+              theme,
+            ),
+            _detailRow(
+              'Memory',
+              _componentDetail(memoryResult, _memoryValue()),
+              theme,
+            ),
+            _detailRow(
+              'Storage',
+              _componentDetail(storageResult, _storageValue()),
+              theme,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Show the details bottom sheet
-  void _showDetailsSheet(BuildContext context) {
-    if (_healthResult == null || _latestSample == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No data available yet')),
-      );
-      return;
-    }
-
-    final lines = <String>[];
-
-    // Add each component's details
-    lines.add('Battery: ${_healthResult!.battery.sentence}');
-    lines.add('Heat: ${_healthResult!.heat.sentence}');
-    lines.add('Memory: ${_healthResult!.memory.sentence}');
-    lines.add('Storage: ${_healthResult!.storage.sentence}');
-
-    // Add thermal capability reason
-    if (!_thermalAvailable) {
-      lines.add(
-        'Thermal capability: not available on this device',
-      );
-    } else {
-      // Thermal is available - show basic info from the health result
-      // Use the heat details if available, otherwise generic message
-      if (_healthResult!.heat.details.isNotEmpty) {
-        lines.add('Thermal: ${_healthResult!.heat.details.join(', ')}');
-      } else {
-        lines.add('Thermal: capability available');
-      }
-    }
-
-    // Add latest sample details
-    final chargingState =
-        _latestSample?['chargingState'] ?? 'Unknown';
-    final batteryPct = _latestSample?['batteryPct'] ?? '?';
-    final batteryTemp = _latestSample?['batteryTempC'] ?? '?';
-    final memAvail = _latestSample?['memAvailMb'] ?? '?';
-    final memTotal = _latestSample?['memTotalMb'] ?? '?';
-    final storageFree = _latestSample?['storageFreeBytes'];
-    final storageTotal = _latestSample?['storageTotalBytes'];
-
-    lines.add('Latest sample:');
-    lines.add(
-      '  Time: ${_formatTimestamp(_latestSample?['timestamp'])}',
+  Widget _detailRow(String label, String value, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 116,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodySmall)),
+        ],
+      ),
     );
-    lines.add(
-      '  Battery: $batteryPct%, Temperature: $batteryTemp°C, '
-      'Charging: $chargingState',
-    );
-    lines.add(
-      '  Memory: $memAvail MB of $memTotal MB',
-    );
-    lines.add(
-      '  Storage: ${storageFree ?? 0} free of ${storageTotal ?? 0} bytes',
-    );
+  }
 
-    // Debug battery read from latest stored sample (NOT a live hardware read).
-    lines.add('Live raw battery (debug):');
-    // This block is for development debugging only; remove at merge.
-    if (_latestSample != null) {
-      lines.add('  Status: ${_latestSample?['status']}');
-      lines.add('  Plugged: ${_latestSample?['pluggedType']}');
-      lines.add('  Level: ${_latestSample?['batteryPct']}');
-      lines.add('  Temperature: ${_latestSample?['batteryTempC']}°C');
-    } else {
-      lines.add('  Unavailable');
-    }
+  String _componentDetail(ComponentResult? result, String measurement) {
+    if (result == null) return '$measurement · No score available';
+    final penalty = result.status == 'unavailable'
+        ? 'No score available'
+        : '${result.pointsLost} points lost';
+    return '$measurement · ${result.sentence} · $penalty';
+  }
 
-    showPerfDetailsSheet(
-      context,
-      'How this was measured',
-      lines,
-    );
+  String _batteryValue() {
+    final value = _latestSample?['batteryPct'];
+    return value is num ? '${value.toStringAsFixed(0)}%' : 'Unavailable';
+  }
+
+  String _temperatureValue() {
+    final value = _latestSample?['batteryTempC'];
+    if (value is num) return '${value.toStringAsFixed(1)}°C';
+    final thermalStatus = _latestSample?['thermalStatus'];
+    return thermalStatus is num
+        ? 'Thermal status $thermalStatus'
+        : 'Unavailable';
+  }
+
+  String _memoryValue() {
+    final available = _latestSample?['memAvailMb'];
+    final total = _latestSample?['memTotalMb'];
+    if (available is! num || total is! num) return 'Unavailable';
+    return '${available.toStringAsFixed(0)} MB available of '
+        '${total.toStringAsFixed(0)} MB';
+  }
+
+  String _memoryDescription() {
+    final result = _healthResult?.memory;
+    if (result != null) return result.sentence;
+    return _loading ? 'Updating memory status' : 'No memory result';
+  }
+
+  String _storageValue() {
+    final free = _latestSample?['storageFreeBytes'];
+    final total = _latestSample?['storageTotalBytes'];
+    if (free is! num || total is! num || total <= 0) return 'Unavailable';
+    return '${(free / total * 100).floor()}% free';
   }
 
   String _formatTimestamp(Object? value) {
@@ -482,143 +549,143 @@ class _PerfHealthScreenState extends State<PerfHealthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final usageBanner = _buildUsageAccessBanner();
     return Scaffold(
-      body: Stack(
-        children: [
-          // Refresh indicator for pull-to-refresh
-          RefreshIndicator(
-            onRefresh: _loadData,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header band
-                  _buildHeader(),
-
-                  const SizedBox(height: 16),
-
-                  // Usage Access banner - use ?? const SizedBox.shrink() to handle nullable return
-                  _buildUsageAccessBanner() ?? const SizedBox.shrink(),
-
-                  const SizedBox(height: 16),
-
-                  // 2x2 grid of metric cards
-                  Row(
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: CyberColors.backgroundGradient,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: _buildMetricCard(
-                          title: 'Battery',
-                          icon: Icons.battery_full,
-                          sentence:
-                              _healthResult?.battery.sentence ?? 'Loading...',
-                          pointsLost: _healthResult?.battery.pointsLost ?? 0,
-                          statusString:
-                              _healthResult?.battery.status ?? 'learning',
+                      if (_hasError)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.cloud_off_outlined,
+                                color: theme.colorScheme.onErrorContainer,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Health data could not be refreshed. Your saved measurements have not been changed.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onErrorContainer,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loading ? null : _loadData,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
                         ),
+                      if (usageBanner != null) ...[
+                        usageBanner,
+                        const SizedBox(height: 12),
+                      ],
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Device health',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'LIVE MEASUREMENTS',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              letterSpacing: 0.6,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        child: _buildMetricCard(
-                          title: 'Heat',
-                          icon: Icons.remove_circle,
-                          sentence:
-                              _healthResult?.heat.sentence ?? 'Loading...',
-                          pointsLost: _healthResult?.heat.pointsLost ?? 0,
-                          statusString:
-                              _healthResult?.heat.status ?? 'learning',
-                        ),
+                      const SizedBox(height: 12),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.82,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _buildMetricCard(
+                            title: 'Battery Health',
+                            icon: Icons.battery_charging_full,
+                            value: _batteryValue(),
+                            description:
+                                _healthResult?.battery.sentence ??
+                                (_loading
+                                    ? 'Updating battery status'
+                                    : 'No battery result'),
+                            result: _healthResult?.battery,
+                          ),
+                          _buildMetricCard(
+                            title: 'Thermal Health',
+                            icon: Icons.device_thermostat,
+                            value: _temperatureValue(),
+                            description:
+                                _healthResult?.heat.sentence ??
+                                (_loading
+                                    ? 'Updating thermal status'
+                                    : 'No thermal result'),
+                            result: _healthResult?.heat,
+                          ),
+                          _buildMetricCard(
+                            title: 'Memory Health',
+                            icon: Icons.memory,
+                            value: _memoryValue(),
+                            description: _memoryDescription(),
+                            result: _healthResult?.memory,
+                          ),
+                          _buildMetricCard(
+                            title: 'Storage Health',
+                            icon: Icons.storage_rounded,
+                            value: _storageValue(),
+                            description:
+                                _healthResult?.storage.sentence ??
+                                (_loading
+                                    ? 'Updating storage status'
+                                    : 'No storage result'),
+                            result: _healthResult?.storage,
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 20),
+                      _buildFooter(),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetricCard(
-                          title: 'Memory',
-                          icon: Icons.memory,
-                          sentence:
-                              _healthResult?.memory.sentence ?? 'Loading...',
-                          pointsLost: _healthResult?.memory.pointsLost ?? 0,
-                          statusString:
-                              _healthResult?.memory.status ?? 'learning',
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildMetricCard(
-                          title: 'Storage',
-                          icon: Icons.storage,
-                          sentence:
-                              _healthResult?.storage.sentence ?? 'Loading...',
-                          pointsLost: _healthResult?.storage.pointsLost ?? 0,
-                          statusString:
-                              _healthResult?.storage.status ?? 'learning',
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Footer
-                  _buildFooter(),
-                ],
+                ),
               ),
             ),
           ),
-
-          // Loading overlay
-          if (_loading)
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
-
-          // Error overlay
-          if (_hasError)
-            const Center(
-              child: Text('Failed to load performance data'),
-            ),
-      ],
+        ),
       ),
     );
   }
-}
-
-/// Custom painter for the semi-circle gauge.
-class _GaugePainter extends CustomPainter {
-  /// Progress from 0.0 to 1.0 across the semi-circle.
-  final double progress;
-
-  _GaugePainter({required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final r = size.width / 2;
-
-    // Draw the full circle background
-    final backgroundPaint = Paint()
-      ..color = Colors.grey.shade200
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = r * 0.1;
-
-    canvas.drawCircle(center, r, backgroundPaint);
-
-    // Draw the progress arc (semi-circle from -90 to 90 degrees, i.e. top half)
-    final progressPaint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = r * 0.1
-      ..strokeCap = StrokeCap.round;
-
-    final arcAngle = progress * 3.14159; // semi-circle = PI radians
-    // Use a rectangular bound that covers the full width for the arc
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    canvas.drawArc(rect, -1.57079, arcAngle, false, progressPaint);
-  }
-
-  @override
-  bool shouldRepaint(_GaugePainter old) => old.progress != progress;
 }

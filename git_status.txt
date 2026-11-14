@@ -1,0 +1,9 @@
+﻿ M lib/main.dart
+ M lib/performance/ui/common/perf_status.dart
+ M lib/performance/ui/common/perf_widgets.dart
+ M lib/performance/ui/home/perf_dashboard_screen.dart
+ M lib/performance/ui/home/perf_health_screen.dart
+?? audit_report.txt
+?? git_log.txt
+?? git_status.txt
+?? lib/core/

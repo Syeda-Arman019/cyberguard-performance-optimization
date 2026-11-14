@@ -1,0 +1,10 @@
+﻿8f81c64 Dasboard Appears
+0a9c60f Fix charging state mapping (off-by-one), tests passing
+ca79976 Task 3: health engine with tests passing
+1ae20dd  Prompt 2 done
+72e791a  Prompt 1 Done
+ed93d0c Remove backup_clean_state repository
+e88ca17 Add recoverable backup of clean main state before dashboard work
+2503e2d chore: add lib/performance/data/perf_types.dart
+195e17d Complete Performance Optimization foundation
+e781012 Empty Flutter project, demo app runs
